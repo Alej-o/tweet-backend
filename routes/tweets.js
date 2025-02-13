@@ -35,14 +35,16 @@ router.post('/addTweet', async (req, res) => {
                 );
             })
         );
-
+		const populatedTweet = await Tweet.findById(savedTweet._id).populate('user', 'username firstname');
         const allHashtags = await Hashtags.find();
         const allHashtagsData = allHashtags.map(hashtag => ({
             name: hashtag.name,
             tweetCount: hashtag.tweets.length
-        })) .sort((a, b) => b.tweetCount - a.tweetCount);
+        }))
+		.sort((a, b) => b.tweetCount - a.tweetCount)
+		.slice(0, 10); 
 
-        res.status(201).json({ result: true, content: savedTweet, hashtags: allHashtagsData });
+        res.status(201).json({ result: true, content: populatedTweet, hashtags: allHashtagsData });
 
     } catch (error) {
         console.error("Error in /addTweet:", error);
