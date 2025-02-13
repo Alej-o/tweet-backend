@@ -52,35 +52,19 @@ router.post('/addTweet', async (req, res) => {
     }
 });
 
-
-
-
-
-
-
-
-
-// .then(newHashtagsItem => {
-//     return Hashtags.findById(newHashtagsItem._id);
-// })
-// .then(data => {
-//     res.json({ result: true, hashtags: data});
-// })
 //Supprimer un tweet via ID
-router.delete("/:id", (req, res) => {
-	Tweet.findByIdAndDelete(req.params.id)
-		.then(deletedTweet => {
-			if (!deletedTweet) {
+router.delete("/:id", async(req, res) => {
+	const deleteTweetById = Tweet.findByIdAndDelete(req.params.id)
+			if (!deleteTweetById) {
 				return res.json({ result: false, error: "Tweet item not found" });
 			}
 			res.json({ result: true });
-		})
 });
 //
-router.get("/", (req, res) => {
-	Tweet.find().populate("user").then(data => {
-		res.json({ tweets: data });
-	});
+router.get("/", async(req, res) => {
+	const allTweet = await Tweet.find().populate("user")
+		res.json({ tweets: allTweet});
+	
 });
 
 

@@ -4,15 +4,14 @@ const bcrypt = require('bcrypt');
 const uid2 = require('uid2');
 const { checkBody } = require('../modules/checkBody');
 const User = require('../models/users');
-
-router.post('/signup', (req, res) => {
+//inscription
+router.post('/signup', async (req, res) => {
   if (!checkBody(req.body, ['firstname','username', 'password'])) {
     res.json({ result: false, error: 'Missing or empty fields' });
     return;
   }
 
-  // Check if the user has not already been registered
-  User.findOne({ username: req.body.username }).then(data => {
+  const data = await User.findOne({ username: req.body.username })
     if (data === null) {
       const hash = bcrypt.hashSync(req.body.password, 10);
 
@@ -22,30 +21,27 @@ router.post('/signup', (req, res) => {
         password: hash,
         token: uid2(32)
       });
-
-      newUser.save().then(newDoc => {
-        res.json({ result: true, token: newDoc.token });
-      });
+      const saveTweet=  await newUser.save()
+        res.json({ result: true, token: saveTweet.token });
+     
     } else {
-      // User already exists in database
       res.json({ result: false, error: 'User already exists' });
     }
-  });
 });
-
-router.post('/signin', (req, res) => {
+// connexion
+router.post('/signin', async(req, res) => {
   if (!checkBody(req.body, ['username', 'password'])) {
     res.json({ result: false, error: 'Missing or empty fields' });
     return;
   }
 
-  User.findOne({ username: req.body.username }).then(data => {
-    if (data && bcrypt.compareSync(req.body.password, data.password)) {
-      res.json({ result: true, token: data.token, firstname: data.firstname });
+  const userData = await User.findOne({ username: req.body.username })
+    if (userData && bcrypt.compareSync(req.body.password, userData.password)) {
+      res.json({ result: true, token: userData.token, firstname: userData.firstname });
     } else {
       res.json({ result: false, error: 'User not found or wrong password' });
     }
-  });
+ 
 });
 
 module.exports = router;
