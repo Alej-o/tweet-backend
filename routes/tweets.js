@@ -25,43 +25,36 @@ router.post('/addTweet', (req, res) => {
                 user: userData._id
             });
 
-            newTweet.save().then(data => {
+            newTweet.save()
+			.then(data => {
                 const tweetRegex = /#[a-z0-9_]+/gi;
-                const hashtags = req.body.content.match(tweetRegex) ;
+                const hashtags = req.body.content.match(tweetRegex);
+                hashtags.forEach(hashtag => {
+                    Hashtags.findOne({ name: hashtag })
+                        .then(existingHashtag => {
+                            if (!existingHashtag) {
+                                const newHashtag = new Hashtags({
+                                    name: hashtag,
+                                    tweets: newTweet._id
+                                });
 
-                let allHashtags = [];  
-                let processed = 0;  
-
-                if (hashtags.length === 0) {
-                    res.json({ result: true, content: data, hashtags: [] });
-                    return;
-                }
-                Hashtags.find({ name: { $in: hashtags } }).then(existingHashtags => {
-                    existingHashtags.forEach(existingHashtag => {
-                        allHashtags.push(existingHashtag.name);
-                    });
-                    hashtags.forEach(hashtag => {
-                        if (!existingHashtags.some(h => h.name === hashtag)) {
-                            const newHashtag = new Hashtags({
-                                name: hashtag,
-                                tweets: [newTweet._id]
-                            });
-
-                            newHashtag.save().then(savedHashtag => {
-                                allHashtags.push(savedHashtag.name);  
-                            });
-                        }
-                    });
-                    processed++;
-                    if (processed === hashtags.length) {
-                        res.json({ result: true, content: data, hashtags: allHashtags });
-                    }
+                                newHashtag.save();
+                            } else {
+                                existingHashtag.tweets.push(newTweet._id);
+                                existingHashtag.save();
+                            }
+                        })
                 });
 
+                Hashtags.find().then(allHashtagsFromDb => {
+                    const allHashtagsNames = allHashtagsFromDb.map(hashtag => hashtag.name);
+                    res.json({ result: true, content: data, hashtags: allHashtagsNames });
+                });
             });
         })
-        .catch(err => res.status(500).json({ result: false, error: err.message }));
 });
+
+
 
 
 
