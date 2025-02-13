@@ -6,53 +6,51 @@ const Hashtags = require('../models/hashtags');
 const User = require('../models/users');
 
 
-router.post('/addTweet', (req, res) => {
-    if (!checkBodyTweet(req.body, ['content', 'token'])) {
-        res.json({ result: false, error: 'Missing or empty fields' });
-        return;
+router.post('/addTweet', async (req, res) => {
+    try {
+        if (!checkBodyTweet(req.body, ['content', 'token'])) {
+            return res.json({ result: false, error: 'Missing or empty fields' });
+        }
+        const userData = await User.findOne({ token: req.body.token });
+        if (!userData) {
+            return res.json({ result: false, error: 'User not found' });
+        }
+        const newTweet = new Tweet({
+            content: req.body.content,
+            like: req.body.like,
+            user: userData._id
+        });
+
+        const savedTweet = await newTweet.save();
+
+        const tweetRegex = /#[a-z0-9_]+/gi;
+        const hashtags = req.body.content.match(tweetRegex);
+
+        await Promise.all(
+            hashtags.map(async (hashtag) => {
+                await Hashtags.findOneAndUpdate(
+                    { name: hashtag }, 
+                    { $addToSet: { tweets: savedTweet._id } }, 
+                    { upsert: true, new: true } 
+                );
+            })
+        );
+
+        const allHashtags = await Hashtags.find();
+        const allHashtagsData = allHashtags.map(hashtag => ({
+            name: hashtag.name,
+            tweetCount: hashtag.tweets.length
+        })) .sort((a, b) => b.tweetCount - a.tweetCount);
+
+        res.status(201).json({ result: true, content: savedTweet, hashtags: allHashtagsData });
+
+    } catch (error) {
+        console.error("Error in /addTweet:", error);
+        res.status(500).json({ result: false, error: 'Internal server error' });
     }
-
-    User.findOne({ token: req.body.token })
-        .then(userData => {
-            if (!userData) {
-                res.json({ result: false, error: 'User not found' });
-                return;
-            }
-
-            const newTweet = new Tweet({
-                content: req.body.content,
-                like: req.body.like,
-                user: userData._id
-            });
-
-            newTweet.save()
-			.then(data => {
-                const tweetRegex = /#[a-z0-9_]+/gi;
-                const hashtags = req.body.content.match(tweetRegex);
-                hashtags.forEach(hashtag => {
-                    Hashtags.findOne({ name: hashtag })
-                        .then(existingHashtag => {
-                            if (!existingHashtag) {
-                                const newHashtag = new Hashtags({
-                                    name: hashtag,
-                                    tweets: newTweet._id
-                                });
-
-                                newHashtag.save();
-                            } else {
-                                existingHashtag.tweets.push(newTweet._id);
-                                existingHashtag.save();
-                            }
-                        })
-                });
-
-                Hashtags.find().then(allHashtagsFromDb => {
-                    const allHashtagsNames = allHashtagsFromDb.map(hashtag => hashtag.name);
-                    res.json({ result: true, content: data, hashtags: allHashtagsNames });
-                });
-            });
-        })
 });
+
+
 
 
 
