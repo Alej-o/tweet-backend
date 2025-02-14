@@ -8,7 +8,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var tweetsRouter = require('./routes/tweets');
 var hashtagsRouter = require('./routes/hashtags');
-
+var likesRouter = require('./routes/likes');
 var app = express();
 const cors = require('cors');
 app.use(cors());
@@ -22,4 +22,5 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/tweets', tweetsRouter);
 app.use('/hashtags', hashtagsRouter);
+app.use('/likes', likesRouter);
 module.exports = app;
