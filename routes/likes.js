@@ -17,9 +17,18 @@ router.post('/addLike', async (req, res) => {
         }
 
         const verifLike = await Like.findOne({ userId: userData._id, tweetId: req.body.tweetId });
-        if (verifLike) {
-            return res.json({ result: false, error: 'Tweet already liked' });
-        }
+        if (verifLike)  {
+           
+            await Like.deleteOne({ _id: verifLike._id });
+
+            
+            const tweet = await Tweet.findByIdAndUpdate(req.body.tweetId, { $inc: { like: -1 } }, { new: true });
+            if (!tweet) {
+                return res.json({ result: false, error: 'Tweet not found' });
+            }
+
+            return res.json({ result: true, action: 'unliked' });
+        } else {
 
         const like = new Like({ userId: userData._id, tweetId: req.body.tweetId });
         await like.save();
@@ -28,7 +37,7 @@ router.post('/addLike', async (req, res) => {
         if (!tweet) {
             return res.json({ result: false, error: 'Tweet not found' });
         }
-
+    }
         res.json({ result: true });
     } catch (error) {
         console.error("Error in /addLike:", error);
