@@ -55,7 +55,7 @@ router.delete("/:id", async(req, res) => {
 });
 //
 router.get("/", async(req, res) => {
-	const allTweet = await Tweet.find().populate("user")
+	const allTweet = await Tweet.find().populate("user").sort({createdAt: -1})
 		res.json({ tweets: allTweet});
 	
 });
