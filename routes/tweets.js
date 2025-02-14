@@ -29,15 +29,15 @@ router.post('/addTweet', async (req, res) => {
         await Promise.all(
             hashtags.map(async (hashtag) => {
                 await Hashtags.findOneAndUpdate(
-                    { name: hashtag }, 
-                    { $addToSet: { tweets: savedTweet._id } }, 
-                    { upsert: true, new: true } 
+                    { name: hashtag },
+                    { $addToSet: { tweets: savedTweet._id } },
+                    { upsert: true, new: true }
                 );
             })
         );
-		const populatedTweet = await Tweet.findById(savedTweet._id).populate('user', 'username firstname');
+        const populatedTweet = await Tweet.findById(savedTweet._id).populate('user', 'username firstname');
 
-        res.status(201).json({ result: true, content: populatedTweet});
+        res.status(201).json({ result: true, content: populatedTweet });
 
     } catch (error) {
         console.error("Error in /addTweet:", error);
@@ -46,18 +46,31 @@ router.post('/addTweet', async (req, res) => {
 });
 
 //Supprimer un tweet via ID
-router.delete("/:id", async(req, res) => {
-	const deleteTweetById = Tweet.findByIdAndDelete(req.params.id)
-			if (!deleteTweetById) {
-				return res.json({ result: false, error: "Tweet item not found" });
-			}
-			res.json({ result: true });
+router.delete("/:id", async (req, res) => {
+    const { token } = req.query;
+    const { id } = req.params;
+
+    if (!token) return res.json({ result: false, error: "I need the token!" });
+
+    try {
+        const user = await User.findOne({ token: token });
+        if (user === null) return res.json({ result: false, error: "No user matching the token!" });
+
+        const deleteTweetById = await Tweet.findOneAndDelete({ _id: id, user: {_id: user._id} });
+        if (deleteTweetById === null) return res.json({ result: false, error: "Tweet not found" });
+
+        return res.json({ result: true });
+    } catch (e) {
+        console.error('Error in Route DELETE /tweets/:id =>', e)
+        return res.status(500).json({ result: false, error: e.message });
+    }
+
 });
 //
-router.get("/", async(req, res) => {
-	const allTweet = await Tweet.find().populate("user").sort({createdAt: -1})
-		res.json({ tweets: allTweet});
-	
+router.get("/", async (req, res) => {
+    const allTweet = await Tweet.find().populate("user").sort({ createdAt: -1 })
+    res.json({ tweets: allTweet });
+
 });
 
 
