@@ -29,7 +29,7 @@ router.post('/addLike', async (req, res) => {
             return res.json({ result: false, error: 'Tweet not found' });
         }
 
-        res.json({ result: true, likeCount: tweet.like });
+        res.json({ result: true });
     } catch (error) {
         console.error("Error in /addLike:", error);
         res.status(500).json({ result: false, error: 'Internal server error' });
