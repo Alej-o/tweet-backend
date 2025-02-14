@@ -35,8 +35,9 @@ router.get("/tweetByHashtag", async (req, res) => {
     .populate({
       path: 'tweets',
       populate: {
-        path: 'user', 
-      },
+        path: 'user',
+        select: 'username firstname'
+      }
     })
     populatedHashtag.tweets.sort((a, b) => b.createdAt - a.createdAt);
     res.json({  populatedHashtag });
